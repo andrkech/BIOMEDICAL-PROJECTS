@@ -8,12 +8,19 @@ Ackowledgement:
 Features:
 
 Data Loading and Preprocessing: Loads MRI images from .pck files, resizes them, and converts them to grayscale.
+
 Metadata Analysis: Analyzes the metadata.csv file to extract insights about injury frequencies, rupture percentages, and knee lateralization.
+
 Visualization: Generates informative plots, including:
+
 Bar plots for injury counts and rupture frequencies.
+
 Pie chart for knee lateralization distribution.
+
 Stacked bar plot for injury severity by knee lateralization.
+
 Sample images for each ACL injury severity category.
+
 Machine Learning: Trains a Logistic Regression model to predict ACL tears based on knee lateralization.
 
 ![image](https://github.com/user-attachments/assets/52055874-a00a-44bc-9418-2a3c2d6d2173)
