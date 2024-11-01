@@ -28,6 +28,7 @@ import kagglehub
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.ensemble import RandomForestClassifier
 
 # Download latest version
 dataset_path = kagglehub.dataset_download("sohaibanwaar1203/kneemridataset")
@@ -220,3 +221,78 @@ def display_sample_images(metadata_df=metadata_df, dataset_path=dataset_path):
     plt.show()
 
 display_sample_images()
+
+def load_images(metadata_df, dataset_dir=dataset_path):
+    images = []
+    labels = []
+
+    for _, row in metadata_df.iterrows():
+        filename = row['volumeFilename']
+        label = row['aclDiagnosis']
+
+        pck_path = None  # Initialize pck_path
+
+        # Search for the file in all volX folders
+        for vol_folder in [f for f in os.listdir(dataset_dir) if f.startswith('vol')]:
+            pck_path = os.path.join(dataset_dir, vol_folder, filename)
+            if os.path.exists(pck_path):
+                break
+
+        # If the file is not found in any volX folder, skip to the next sample
+        if pck_path is None or not os.path.exists(pck_path):
+            #print(f"Warning: File not found: {filename}. Skipping to the next sample.")
+            continue
+
+        with open(pck_path, 'rb') as f:
+            try:
+                img = pickle.load(f)
+            except Exception as e:
+                print(f"Error loading file {filename}: {e}")
+                continue
+
+        # Preprocessing
+        try:
+            img = np.max(img, axis=0)  # Maximum intensity projection
+            img = cv2.resize(img, (64, 64))
+            images.append(img.flatten())
+            labels.append(label)
+        except Exception as e:
+            print(f"Error preprocessing file {filename}: {e}")
+            continue
+
+    return np.array(images), np.array(labels)
+
+# --- 3. Prepare Data ---
+X, y = load_images(metadata_df)
+
+# Check if any images were loaded
+if len(X) == 0:
+    print("Error: No images were loaded. Exiting.")
+    exit()  # Exit the script if no images are loaded
+
+# Split data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# --- 4. Train Model ---
+model = RandomForestClassifier(random_state=42)  # Using RandomForest
+model.fit(X_train, y_train)
+
+# --- 5. Predict and Evaluate ---
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+cm = confusion_matrix(y_test, y_pred)
+
+print("\Random Forest Classification:")
+print(f"Accuracy: {accuracy:.4f}")
+print("Confusion Matrix:")
+print(cm)
+
+"""**Observations:**
+
+The confusion matrix indicates that the model is heavily biased towards predicting the non-injuries (label 0). This is maybe due to the data imbalance of the dataset or due to model limitations.
+
+**Potential Solutions:**
+
+1. Try out other models (e.g. CNNs)
+2. Use a different image preprocessing method (MIP might not be informative enough).
+"""
